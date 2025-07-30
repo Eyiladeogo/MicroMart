@@ -1,0 +1,163 @@
+# =====================================
+# General Ignores (Applies to any project)
+# =====================================
+.DS_Store
+.env
+.idea/
+.vscode/
+*.log
+*.sqlite3
+*.db
+*.db-journal
+/tmp/
+.terraform/
+.terraform.lock.hcl
+.aws/
+.serverless/
+.npm/
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnp/
+.pnp.js
+.pnp.cjs
+
+# =====================================
+# Python / Django Backend Specific Ignores
+# =====================================
+# Virtual environment
+venv/
+.venv/
+/env/
+/bin/
+/include/
+/lib/
+/lib64/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.mo
+*.pot
+*.log
+*.seed
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+.ipynb_checkpoints
+.spyderproject
+.spyproject
+celerybeat-schedule
+*.bak
+*.swp
+*~
+*.sublime-project
+*.sublime-workspace
+.directory
+.project
+.pydevproject
+.settings/
+*.iml
+*.ipr
+*.iws
+
+# Django specific
+/media/ # User-uploaded files
+/static/ # Collected static files
+/db.sqlite3 # Default SQLite database file
+*.sqlite3-journal
+local_settings.py # For local overrides not committed to repo
+
+# =====================================
+# Flutter Frontend Specific Ignores
+# =====================================
+# Build and compiled files
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/.dart_tool/
+/build/
+.packages
+.flutter-plugins-lock
+
+# Android specific
+/android/.gradle
+/android/.idea
+/android/local.properties
+/android/**/*.iml
+/android/captures/
+/android/build/
+/android/app/build/
+/android/app/.cxx/
+/android/app/src/main/assets/flutter_assets/ # Flutter assets copied to Android build
+
+# iOS specific
+/ios/.symlinks
+/ios/.build/
+/ios/Flutter/.last_build_id
+/ios/Flutter/.ios_debug_target_info
+/ios/Flutter/.ios_release_target_info
+/ios/Runner/*.xcodeproj/project.xcworkspace/
+/ios/Runner/*.xcodeproj/xcuserdata/
+/ios/Runner/*.xcodeproj/xcshareddata/
+/ios/Runner/*.xcworkspace/
+/ios/Runner/.generated/
+/ios/Pods/
+/ios/.generated/
+/ios/DerivedData/
+/ios/Flutter/App.framework/
+/ios/Flutter/Flutter.framework/
+/ios/Flutter/flutter_assets/ # Flutter assets copied to iOS build
+
+# macOS specific (if building for desktop)
+/macos/build/
+/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Web specific (if building for web)
+/web/build/
+
+# Linux specific (if building for desktop)
+/linux/build/
+
+# Windows specific (if building for desktop)
+/windows/build/
+
+# VS Code (if not already covered by general .vscode/)
+.vscode/launch.json
+.vscode/tasks.json
+
+# Dart specific
+.dart_tool/
+.idea/
+.packages
+.vscode/
+pubspec.lock # Often committed, but can be ignored if you prefer
+/lib/generated_plugin_registrant.dart # Generated file
+
+# =====================================
+# IDE Specific Ignores (common for Python & Flutter)
+# =====================================
+# PyCharm / IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code (if not already covered by general .vscode/)
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+
