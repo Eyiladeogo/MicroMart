@@ -1,11 +1,17 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:micromart_frontend/screens/home_screen.dart';
 import 'package:micromart_frontend/screens/cart_screen.dart';
 import 'package:micromart_frontend/providers/auth_provider.dart';
 import 'package:micromart_frontend/providers/cart_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <--- NEW: Import flutter_dotenv
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
   runApp(
     MultiProvider(
       providers: [

@@ -9,7 +9,7 @@ import 'package:micromart_frontend/models/cart.dart';
 class ApiService {
   final String baseUrl;
 
-  ApiService({this.baseUrl = kBaseUrl});
+  ApiService({String? baseUrl}) : baseUrl = baseUrl ?? kBaseUrl;
 
   Future<Map<String, dynamic>> _sendAuthenticatedRequest(
     String endpoint,
@@ -110,7 +110,7 @@ class ApiService {
         'username': username,
         'email': email,
         'password': password,
-        'password2': password,
+        'confirm_password': password,
       },
     );
   }
@@ -120,7 +120,7 @@ class ApiService {
       kTokenObtainPairEndpoint,
       'POST',
       null,
-      body: {'username': email, 'password': password},
+      body: {'email': email, 'password': password},
     );
   }
 
@@ -141,6 +141,7 @@ class ApiService {
     double? maxPrice,
     int? page,
     int? pageSize,
+    String? token,
   }) async {
     final queryParams = <String, String>{};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
@@ -155,7 +156,11 @@ class ApiService {
     final endpoint =
         '$kProductsEndpoint${queryString.isEmpty ? '' : '?$queryString'}';
 
-    final responseData = await _sendAuthenticatedRequest(endpoint, 'GET', null);
+    final responseData = await _sendAuthenticatedRequest(
+      endpoint,
+      'GET',
+      token,
+    );
 
     final List<dynamic> results = responseData['results'];
     final List<Product> products = results

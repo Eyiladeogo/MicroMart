@@ -7,7 +7,6 @@ import 'package:micromart_frontend/providers/auth_provider.dart';
 import 'package:micromart_frontend/services/api_service.dart';
 import 'package:micromart_frontend/widgets/auth_modal.dart';
 import 'package:micromart_frontend/widgets/product_card.dart';
-import 'dart:math' as math; // Import for ceil
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -35,7 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This is the correct place to call _fetchProducts if it needs context
+    // or provider data that might not be ready in initState.
+    // Ensure it's only called once on initial build if products are empty.
+    if (_products.isEmpty && !_isLoading) {
+      _fetchProducts();
+    }
   }
 
   @override
@@ -56,7 +65,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
+      // Get the AuthProvider instance from the context
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      // Get the valid access token
+      final token = await authProvider.getValidAccessToken();
+
       final Map<String, dynamic> responseData = await _apiService.getProducts(
+        token: token,
         page: _currentPage,
         pageSize: _pageSize,
         search: _currentSearchQuery,
