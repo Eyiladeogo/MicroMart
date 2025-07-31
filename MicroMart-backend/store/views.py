@@ -1,144 +1,93 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework import viewsets
 
 from .models import Cart, CartItem, Order, OrderItem, Product
-from .serializers import (CartItemSerializer, CartSerializer, OrderSerializer,
-                          ProductSerializer, UserSerializer)
+from .serializers import (
+    CartItemSerializer,
+    CartSerializer,
+    OrderSerializer,
+    ProductSerializer,
+    UserSerializer,
+    AdjustCartItemSerializer,
+    RemoveCartItemSerializer,
+)
+from .pagination import StandardResultsSetPagination
 
 
-# --- Custom Pagination ---
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 100
-
-
-# --- Authentication Views ---
-class UserRegistrationView(generics.CreateAPIView):
+@extend_schema(tags=["Products"])
+class ProductViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for user registration.
-    Allows anyone to create a new user account.
-    """
-
-    serializer_class = UserSerializer
-    permission_classes = (AllowAny,)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        # Create an empty cart for the new user
-        Cart.objects.create(user=user)
-        return Response(
-            {
-                "message": "User registered successfully.",
-                "user": UserSerializer(user).data,  # Return user data without password
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    """
-    Custom JWT token obtain view.
-    Uses the default Simple JWT serializer.
-    """
-
-    permission_classes = (AllowAny,)
-
-
-# --- Product Views ---
-class ProductListView(generics.ListAPIView):
-    """
-    API endpoint for listing and searching products.
-    Allows filtering by name/description and ordering by price/name.
-    Anyone can view products.
+    API endpoint for managing products.
+    - list, retrieve: Accessible by authenticated users (IsAuthenticated)
+    - create, update, partial_update, destroy: Restricted to Admin users (IsAdminUser)
     """
 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = (AllowAny,)
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["price", "stock"]  # Example: /products/?price=10.00
-    search_fields = ["name", "description"]  # Example: /products/?search=shirt
-    ordering_fields = ["name", "price", "stock"]  # Example: /products/?ordering=-price
+    filterset_fields = ["price", "stock"]
+    search_fields = ["name", "description"]
+    ordering_fields = ["name", "price", "stock"]
     pagination_class = StandardResultsSetPagination
-
-
-class ProductDetailView(generics.RetrieveAPIView):
-    """
-    API endpoint for retrieving a single product by ID.
-    Anyone can view product details.
-    """
-
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    permission_classes = (AllowAny,)
-    lookup_field = "pk"  # Default lookup field is 'pk' (primary key)
-
-
-# --- Admin Product Management Views ---
-class ProductAdminViewSet(generics.ModelViewSet):
-    """
-    API endpoint for admin users to create, retrieve, update, and delete products.
-    Only accessible by admin users.
-    """
-
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    permission_classes = (IsAdminUser,)  # Only admin users can access this
     lookup_field = "pk"
 
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            permission_classes = [IsAdminUser]
+        else:  # 'list', 'retrieve'
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
-# --- Cart Views ---
-class CartView(generics.RetrieveAPIView):
+
+@extend_schema(tags=["Carts"])
+class CartViewSet(viewsets.ViewSet):
     """
-    API endpoint for viewing the authenticated user's cart.
-    Authenticated users can view their own cart.
+    API endpoint for managing the authenticated user's cart.
+    - retrieve: View user's cart.
+    - add_item: Add product to cart.
+    - remove_item: Remove product from cart or reduce quantity.
+    All actions require authentication.
     """
 
-    serializer_class = CartSerializer
     permission_classes = (IsAuthenticated,)
+    serializer_class = CartSerializer
 
-    def get_object(self):
-        """
-        Retrieves the cart for the current authenticated user.
-        Creates a new cart if one doesn't exist for the user.
-        """
+    def get_cart(self):
+        """Helper to get or create the user's cart."""
         cart, created = Cart.objects.get_or_create(user=self.request.user)
         return cart
 
+    @extend_schema(
+        responses={200: CartSerializer},
+        description="Retrieve the authenticated user's cart.",
+        summary="Get User Cart",
+    )
+    def retrieve(self, request):
+        """Retrieve the authenticated user's cart."""
+        cart = self.get_cart()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
 
-class AddToCartView(APIView):
-    """
-    API endpoint for adding a product to the authenticated user's cart.
-    Handles adding new items or updating quantity of existing items.
-    """
-
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
+    @extend_schema(
+        request=CartItemSerializer,
+        responses={200: CartSerializer},
+        description="Add a product to the cart or update its quantity. If adding an existing product, it increments the quantity.",
+        summary="Add or Update Cart Item",
+    )
+    def add_item(self, request):
+        """Add a product to the cart or update its quantity. If adding an existing product, it increments the quantity."""
         product_id = request.data.get("product_id")
         quantity = request.data.get("quantity", 1)
-
-        if not product_id:
-            return Response(
-                {"detail": "Product ID is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not isinstance(quantity, int) or quantity < 1:
-            return Response(
-                {"detail": "Quantity must be a positive integer."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         try:
             product = Product.objects.get(id=product_id)
@@ -155,14 +104,13 @@ class AddToCartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        cart, created = Cart.objects.get_or_create(user=request.user)
+        cart = self.get_cart()
 
         with transaction.atomic():
             cart_item, item_created = CartItem.objects.get_or_create(
-                cart=cart, product=product, defaults={"quantity": quantity}
+                cart=cart, product_id=product_id, defaults={"quantity": quantity}
             )
             if not item_created:
-                # If item already exists, update quantity
                 new_quantity = cart_item.quantity + quantity
                 if product.stock < new_quantity:
                     return Response(
@@ -177,72 +125,127 @@ class AddToCartView(APIView):
             serializer = CartSerializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-class RemoveFromCartView(APIView):
-    """
-    API endpoint for removing a product from the authenticated user's cart
-    or reducing its quantity.
-    """
-
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
+    @extend_schema(
+        request=AdjustCartItemSerializer,
+        responses={200: CartSerializer},
+        description="Adjusts the quantity of a product in the cart by incrementing or decrementing. Action can either be 'increment' or 'decrement'.",
+        summary="Adjust Cart Item Quantity",
+    )
+    def adjust_item_quantity(self, request):
+        """
+        Adjusts the quantity of a product in the cart by incrementing or decrementing. Action can either be 'increment' or 'decrement'.
+        """
         product_id = request.data.get("product_id")
-        quantity_to_remove = request.data.get(
-            "quantity", None
-        )  # If None, remove all of this item
+        action = request.data.get("action")
+        change_by = request.data.get("change_by", 1)
 
-        if not product_id:
-            return Response(
-                {"detail": "Product ID is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = AdjustCartItemSerializer(
+            data={"product_id": product_id, "action": action, "change_by": change_by}
+        )
 
-        cart = get_object_or_404(Cart, user=request.user)
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            cart_item = CartItem.objects.get(cart=cart, product__id=product_id)
-        except CartItem.DoesNotExist:
-            return Response(
-                {"detail": "Product not found in cart."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        cart = self.get_cart()
+        cart_item = get_object_or_404(CartItem, cart=cart, product_id=product_id)
+        product = cart_item.product_id
 
         with transaction.atomic():
-            if quantity_to_remove is None or quantity_to_remove >= cart_item.quantity:
-                # Remove the entire item
-                cart_item.delete()
-                message = "Product removed from cart."
-            elif quantity_to_remove < cart_item.quantity and quantity_to_remove > 0:
-                # Reduce quantity
-                cart_item.quantity -= quantity_to_remove
+            if action == "increment":
+                new_quantity = cart_item.quantity + change_by
+                if product.stock < new_quantity:
+                    return Response(
+                        {
+                            "detail": f"Cannot increment. Not enough stock for {product.name}. Available: {product.stock}, Current cart: {cart_item.quantity}"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                cart_item.quantity = new_quantity
                 cart_item.save()
-                message = f"Quantity of {cart_item.product.name} reduced."
-            else:
-                return Response(
-                    {
-                        "detail": "Quantity to remove must be a positive integer or not provided to remove all."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
+                message = (
+                    f"Quantity of {product.name} incremented to {cart_item.quantity}."
                 )
+            elif action == "decrement":
+                new_quantity = cart_item.quantity - change_by
+                if new_quantity < 1:
+                    # If decrementing would make quantity 0 or less, remove the item
+                    cart_item.delete()
+                    message = f"Product {product.name} removed from cart."
+                else:
+                    cart_item.quantity = new_quantity
+                    cart_item.save()
+                    message = f"Quantity of {product.name} decremented to {cart_item.quantity}."
 
             serializer = CartSerializer(cart)
             return Response(
                 {"message": message, "cart": serializer.data}, status=status.HTTP_200_OK
             )
 
+    @extend_schema(
+        request=RemoveCartItemSerializer,
+        responses={200: CartSerializer},
+        summary="Remove a product from the cart entirely.",
+        description="Remove a product from the cart entirely. This explicitly deletes the cart item",
+    )
+    def remove_item(self, request):
+        """
+        Removes a product from the cart entirely. This explicitly deletes the cart item.
+        """
+        product_id = request.data.get("product_id")
+        if not product_id:
+            return Response(
+                {"detail": "Product ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-# --- Order Views ---
-class OrderCreateView(generics.CreateAPIView):
+        cart = self.get_cart()
+        cart_item = get_object_or_404(CartItem, cart=cart, product_id=product_id)
+
+        with transaction.atomic():
+            cart_item.delete()
+            message = f"Product {cart_item.product_id.name} removed from cart."
+            serializer = CartSerializer(cart)
+            return Response(
+                {"message": message, "cart": serializer.data}, status=status.HTTP_200_OK
+            )
+
+    @extend_schema(
+        description="Clear all items from the user's cart",
+        summary="Clear cart",
+        responses={204: "No Content"},
+    )
+    def clear_cart(self, request):
+        """Clear all items from the user's cart."""
+        cart = self.get_cart()
+        cart.cart_items.all().delete()
+        return Response({"detail": "Cart cleared."}, status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Orders"])
+class OrderViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for creating an order from the user's cart.
-    Requires authentication.
+    API endpoint for managing user orders.
+    - create: Create an order from the cart.
+    - list: List authenticated user's orders.
+    - retrieve: Retrieve a single order by ID (user's own or any for admin).
+    All actions require authentication.
     """
 
     serializer_class = OrderSerializer
     permission_classes = (IsAuthenticated,)
+    pagination_class = StandardResultsSetPagination
+    lookup_field = "pk"
+
+    def get_queryset(self):
+        """
+        Returns orders only for the authenticated user.
+        Admin users can see all orders.
+        """
+        if self.request.user.is_staff:
+            return Order.objects.all().order_by("-created_at")
+        return Order.objects.filter(user=self.request.user).order_by("-created_at")
 
     def create(self, request, *args, **kwargs):
+        """Create an order from the user's cart."""
         user = request.user
         cart = get_object_or_404(Cart, user=user)
         cart_items = cart.cart_items.all()
@@ -265,13 +268,11 @@ class OrderCreateView(generics.CreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            # Calculate total amount and create the order
             total_amount = sum(item.subtotal for item in cart_items)
             order = Order.objects.create(
                 user=user, total_amount=total_amount, status="pending"
             )
 
-            # Create order items and deduct stock
             for item in cart_items:
                 OrderItem.objects.create(
                     order=order,
@@ -280,48 +281,12 @@ class OrderCreateView(generics.CreateAPIView):
                     quantity=item.quantity,
                     price_at_order=item.product.price,
                 )
-                # Deduct stock
-                item.product.reduce_stock(item.quantity)  # Using the model method
+                item.product.reduce_stock(item.quantity)
 
-            # Clear the cart after order is placed
             cart_items.delete()
 
             serializer = self.get_serializer(order)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class OrderListView(generics.ListAPIView):
-    """
-    API endpoint for listing authenticated user's orders.
-    """
-
-    serializer_class = OrderSerializer
-    permission_classes = (IsAuthenticated,)
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        """
-        Returns orders only for the authenticated user.
-        Admin users can see all orders (handled by a separate view if needed, or by modifying this one).
-        """
-        return Order.objects.filter(user=self.request.user).order_by("-created_at")
-
-
-class OrderDetailView(generics.RetrieveAPIView):
-    """
-    API endpoint for retrieving a single order by ID.
-    Users can only view their own orders. Admin users can view any order.
-    """
-
-    serializer_class = OrderSerializer
-    permission_classes = (IsAuthenticated,)
-    lookup_field = "pk"
-
-    def get_queryset(self):
-        """
-        Ensures a user can only retrieve their own orders.
-        Admin users can access all orders.
-        """
-        if self.request.user.is_staff:  # is_staff implies admin access for this context
-            return Order.objects.all()
-        return Order.objects.filter(user=self.request.user)
+    # Note: list and retrieve methods are provided by ModelViewSet automatically
+    # We override get_queryset to handle user-specific vs. admin access for list/retrieve

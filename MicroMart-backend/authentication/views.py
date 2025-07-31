@@ -1,18 +1,29 @@
 from rest_framework import status
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, RetrieveModelMixin,
-                                   UpdateModelMixin)
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin,
+)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenBlacklistView
+from drf_spectacular.utils import extend_schema
 
 from .models import User
-from .serializers import (CustomTokenObtainPairSerializer,
-                          RegistrationSerializer, UserSerializer)
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    RegistrationSerializer,
+    UserSerializer,
+)
+
+from store.models import Cart
 
 
+@extend_schema(tags=["Authentication"])
 class UserRegistrationViewSet(GenericViewSet, CreateModelMixin):
     """
     ViewSet for user registration.
@@ -20,7 +31,7 @@ class UserRegistrationViewSet(GenericViewSet, CreateModelMixin):
     """
 
     serializer_class = RegistrationSerializer
-    permission_classes = [AllowAny]  # No permissions required for registration
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return User.objects.all()
@@ -30,6 +41,9 @@ class UserRegistrationViewSet(GenericViewSet, CreateModelMixin):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.save()
+
+        # Automatically create a cart for the new user
+        Cart.objects.create(user=user)
 
         # Generate token
         token_serializer = TokenObtainPairSerializer(
@@ -54,6 +68,7 @@ class UserRegistrationViewSet(GenericViewSet, CreateModelMixin):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["Authentication"])
 class UserLoginViewSet(GenericViewSet, CreateModelMixin):
     """
     ViewSet for user login.
@@ -61,7 +76,7 @@ class UserLoginViewSet(GenericViewSet, CreateModelMixin):
     """
 
     serializer_class = CustomTokenObtainPairSerializer
-    permission_classes = [AllowAny]  # No permissions required for login
+    permission_classes = [AllowAny]
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -72,6 +87,7 @@ class UserLoginViewSet(GenericViewSet, CreateModelMixin):
         return Response(tokens, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Authentication"])
 class UserProfileViewSet(GenericViewSet, RetrieveModelMixin, UpdateModelMixin):
     """
     ViewSet for user profile management.

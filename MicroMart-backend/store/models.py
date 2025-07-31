@@ -65,23 +65,24 @@ class CartItem(models.Model):
     """
 
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="cart_items")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("cart", "product")  # A product can only appear once per cart
-        ordering = ["product__name"]
+        unique_together = (
+            "cart",
+            "product_id",
+        )  # A product can only appear once per cart
+        ordering = ["product_id__name"]
 
     def __str__(self):
-        return (
-            f"{self.quantity} x {self.product.name} in {self.cart.user.username}'s cart"
-        )
+        return f"{self.quantity} x {self.product_id.name} in {self.cart.user.username}'s cart"
 
     @property
     def subtotal(self):
         """Calculates the subtotal for this cart item."""
-        return self.quantity * self.product.price
+        return self.quantity * self.product_id.price
 
 
 class Order(models.Model):

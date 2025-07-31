@@ -90,7 +90,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = (
             "id",
-            "product",
+            "product_id",
             "product_name",
             "product_price",
             "quantity",
@@ -99,6 +99,16 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "cart",
         )  # Cart is set by the view, not directly by user input
+
+        def validate_quantity(self, value):
+            """
+            Validates that quantity is a positive integer.
+            """
+            if not isinstance(value, int) or value <= 0:
+                raise serializers.ValidationError(
+                    "Quantity must be a positive integer."
+                )
+            return value
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -125,6 +135,35 @@ class CartSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("user",)  # User is set by the view
+
+
+class AdjustCartItemSerializer(serializers.Serializer):
+    """
+    Serializer for adjusting cart item quantity.
+    Used for adding/removing items from the cart.
+    """
+
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    action = serializers.ChoiceField(choices=["increment", "decrement"])
+    change_by = serializers.IntegerField(default=1, min_value=1)
+
+    def validate(self, data):
+        if data["action"] not in ["increment", "decrement"]:
+            raise serializers.ValidationError(
+                "Action must be 'increment' or 'decrement'."
+            )
+        if not isinstance(data["change_by"], int) or data["change_by"] < 1:
+            raise serializers.ValidationError("Change by must be a positive integer.")
+        return data
+
+
+class RemoveCartItemSerializer(serializers.Serializer):
+    """
+    Serializer for removing an item from the cart.
+    Used when a user wants to remove a specific item from their cart.
+    """
+
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
