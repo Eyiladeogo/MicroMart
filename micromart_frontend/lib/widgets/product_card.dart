@@ -61,7 +61,7 @@ class ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '\$${product.price.toStringAsFixed(2)}',
+                  '₦${product.price.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.blueGrey[800],

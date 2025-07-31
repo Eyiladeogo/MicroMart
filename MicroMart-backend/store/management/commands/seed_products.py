@@ -46,7 +46,7 @@ class Command(BaseCommand):
                     product_name = f"{fake.word().capitalize()} {fake.word().capitalize()} {random.randint(100, 999)}"
 
                 # Generate random image URL using picsum.photos for random, realistic images
-                image_url = f"https://picsum.photos/seed/{slugify(product_name)}/600/400"  # Use slugified name as seed for consistent image for same product name
+                image_url = f"https://placehold.co/600*400/C0C0C0/333333?text={slugify(product_name).replace('-', '+')}"  # Use slugified name as seed for consistent image for same product name
 
                 with transaction.atomic():
                     Product.objects.create(

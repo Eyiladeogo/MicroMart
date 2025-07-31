@@ -7,6 +7,7 @@ class CartItem {
   final int product; // Product ID (foreign key)
   final String productName;
   final double productPrice;
+  final String? productImage;
   int quantity; // Quantity can be changed
   final double subtotal;
 
@@ -15,6 +16,7 @@ class CartItem {
     required this.product,
     required this.productName,
     required this.productPrice,
+    required this.productImage,
     required this.quantity,
     required this.subtotal,
   });
@@ -27,6 +29,7 @@ class CartItem {
       // FIX: Explicitly parse String to double, handle null
       productPrice:
           double.tryParse(json['product_price']?.toString() ?? '0.0') ?? 0.0,
+      productImage: json['product_image'],
       quantity: json['quantity'] ?? 0,
       // FIX: Explicitly parse String to double, handle null
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0.0') ?? 0.0,

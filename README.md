@@ -89,7 +89,17 @@ Follow these steps to set up and run MicroMart locally.
    python manage.py createsuperuser
    ```
 
-7. **Run the development server**:
+7. **Seed Dummy Product Data (Optional but Recommended)**:
+   To populate your database with sample products for testing, use this custom management command:
+
+   ```bash
+   python manage.py seed_products --num_products 100 --clear_existing
+   ```
+
+   - `--num_products 100`: Specifies the number of dummy products to create (default is 50)
+   - `--clear_existing`: Clears all existing products before seeding new ones. Use this if you want a fresh dataset
+
+8. **Run the development server**:
    ```bash
    python manage.py runserver 0.0.0.0:8000
    ```

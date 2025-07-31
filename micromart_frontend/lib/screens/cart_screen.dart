@@ -18,7 +18,6 @@ class CartScreen extends StatelessWidget {
           }
 
           final cart = cartProvider.cart;
-          print('Cart: $cart'); // Debugging line to check cart state
 
           if (cart == null || cart.cartItems.isEmpty) {
             return Center(
@@ -60,9 +59,6 @@ class CartScreen extends StatelessWidget {
                   itemCount: cart.cartItems.length,
                   itemBuilder: (context, index) {
                     final item = cart.cartItems[index];
-                    print(
-                      'Cart Item: $item',
-                    ); // Debugging line to check each item
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 2,
@@ -81,9 +77,11 @@ class CartScreen extends StatelessWidget {
                                 color: Colors.grey[200],
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: item.productName.isNotEmpty
+                              child:
+                                  item.productImage != null &&
+                                      item.productImage!.isNotEmpty
                                   ? Image.network(
-                                      'https://picsum.photos/seed/${item.product}/100/100', // Consistent image based on product ID
+                                      item.productImage!,
                                       fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) =>
@@ -120,7 +118,7 @@ class CartScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '\$${item.productPrice.toStringAsFixed(2)}',
+                                    '₦${item.productPrice.toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: Colors.blueGrey[800],
