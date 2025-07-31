@@ -2,23 +2,16 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import viewsets
 
 from .models import Cart, CartItem, Order, OrderItem, Product
-from .serializers import (
-    CartItemSerializer,
-    CartSerializer,
-    OrderSerializer,
-    ProductSerializer,
-    UserSerializer,
-    AdjustCartItemSerializer,
-    RemoveCartItemSerializer,
-)
 from .pagination import StandardResultsSetPagination
+from .serializers import (AdjustCartItemSerializer, CartItemSerializer,
+                          CartSerializer, OrderSerializer, ProductSerializer,
+                          RemoveCartItemSerializer, UserSerializer)
 
 
 @extend_schema(tags=["Products"])
