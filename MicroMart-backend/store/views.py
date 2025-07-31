@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -9,9 +10,15 @@ from rest_framework.response import Response
 
 from .models import Cart, CartItem, Order, OrderItem, Product
 from .pagination import StandardResultsSetPagination
-from .serializers import (AdjustCartItemSerializer, CartItemSerializer,
-                          CartSerializer, OrderSerializer, ProductSerializer,
-                          RemoveCartItemSerializer, UserSerializer)
+from .serializers import (
+    AdjustCartItemSerializer,
+    CartItemSerializer,
+    CartSerializer,
+    OrderSerializer,
+    ProductSerializer,
+    RemoveCartItemSerializer,
+    UserSerializer,
+)
 
 
 @extend_schema(tags=["Products"])
@@ -38,7 +45,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.action in ["create", "update", "partial_update", "destroy"]:
             permission_classes = [IsAdminUser]
         else:  # 'list', 'retrieve'
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
 
@@ -57,7 +64,15 @@ class CartViewSet(viewsets.ViewSet):
 
     def get_cart(self):
         """Helper to get or create the user's cart."""
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        cart, created = (
+            Cart.objects.filter(user=self.request.user)
+            .prefetch_related(
+                Prefetch(
+                    "cart_items", queryset=CartItem.objects.select_related("product_id")
+                )
+            )
+            .get_or_create(user=self.request.user)
+        )
         return cart
 
     @extend_schema(
@@ -101,7 +116,7 @@ class CartViewSet(viewsets.ViewSet):
 
         with transaction.atomic():
             cart_item, item_created = CartItem.objects.get_or_create(
-                cart=cart, product_id=product_id, defaults={"quantity": quantity}
+                cart=cart, product_id=product, defaults={"quantity": quantity}
             )
             if not item_created:
                 new_quantity = cart_item.quantity + quantity
@@ -115,6 +130,7 @@ class CartViewSet(viewsets.ViewSet):
                 cart_item.quantity = new_quantity
                 cart_item.save()
 
+            cart = self.get_cart()
             serializer = CartSerializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -168,6 +184,7 @@ class CartViewSet(viewsets.ViewSet):
                     cart_item.save()
                     message = f"Quantity of {product.name} decremented to {cart_item.quantity}."
 
+            cart = self.get_cart()
             serializer = CartSerializer(cart)
             return Response(
                 {"message": message, "cart": serializer.data}, status=status.HTTP_200_OK
@@ -196,6 +213,7 @@ class CartViewSet(viewsets.ViewSet):
         with transaction.atomic():
             cart_item.delete()
             message = f"Product {cart_item.product_id.name} removed from cart."
+            cart = self.get_cart()
             serializer = CartSerializer(cart)
             return Response(
                 {"message": message, "cart": serializer.data}, status=status.HTTP_200_OK
@@ -209,7 +227,10 @@ class CartViewSet(viewsets.ViewSet):
     def clear_cart(self, request):
         """Clear all items from the user's cart."""
         cart = self.get_cart()
-        cart.cart_items.all().delete()
+        with transaction.atomic():
+            cart.cart_items.all().delete()
+        cart = self.get_cart()
+        serializer = CartSerializer(cart)
         return Response({"detail": "Cart cleared."}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -227,6 +248,16 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     pagination_class = StandardResultsSetPagination
     lookup_field = "pk"
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action in ["update", "partial_update", "destroy"]:
+            permission_classes = [IsAdminUser]
+        else:  # 'list', 'retrieve', 'create'
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         """
@@ -252,7 +283,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             # Check stock for all items before proceeding
             for item in cart_items:
-                product = item.product
+                product = item.product_id
                 if product.stock < item.quantity:
                     return Response(
                         {
@@ -269,12 +300,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             for item in cart_items:
                 OrderItem.objects.create(
                     order=order,
-                    product=item.product,
-                    product_name=item.product.name,
+                    product=item.product_id,
+                    product_name=item.product_id.name,
                     quantity=item.quantity,
-                    price_at_order=item.product.price,
+                    price_at_order=item.product_id.price,
                 )
-                item.product.reduce_stock(item.quantity)
+                item.product_id.reduce_stock(item.quantity)
 
             cart_items.delete()
 

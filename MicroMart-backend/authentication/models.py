@@ -7,6 +7,8 @@ class User(AbstractUser):
     Custom user model that extends Django's AbstractUser.
     """
 
+    email = models.EmailField(unique=True)
+
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 

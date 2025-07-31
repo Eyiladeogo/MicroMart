@@ -3,7 +3,7 @@ import random
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils.text import slugify
-from faker import Faker  # You'll need to install Faker: pip install Faker
+from faker import Faker
 
 from store.models import Product
 

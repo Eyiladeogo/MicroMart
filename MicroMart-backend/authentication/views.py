@@ -1,8 +1,12 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, RetrieveModelMixin,
-                                   UpdateModelMixin)
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin,
+)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -12,8 +16,11 @@ from rest_framework_simplejwt.views import TokenBlacklistView
 from store.models import Cart
 
 from .models import User
-from .serializers import (CustomTokenObtainPairSerializer,
-                          RegistrationSerializer, UserSerializer)
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    RegistrationSerializer,
+    UserSerializer,
+)
 
 
 @extend_schema(tags=["Authentication"])
