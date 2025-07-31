@@ -80,10 +80,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     Includes product details for display.
     """
 
-    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_name = serializers.CharField(source="product_id.name", read_only=True)
     product_price = serializers.DecimalField(
-        source="product.price", max_digits=10, decimal_places=2, read_only=True
+        source="product_id.price", max_digits=10, decimal_places=2, read_only=True
     )
+    product_image = serializers.ImageField(source="product_id.image", read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
@@ -93,6 +94,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product_id",
             "product_name",
             "product_price",
+            "product_image",
             "quantity",
             "subtotal",
         )
