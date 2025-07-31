@@ -10,15 +10,9 @@ from rest_framework.response import Response
 
 from .models import Cart, CartItem, Order, OrderItem, Product
 from .pagination import StandardResultsSetPagination
-from .serializers import (
-    AdjustCartItemSerializer,
-    CartItemSerializer,
-    CartSerializer,
-    OrderSerializer,
-    ProductSerializer,
-    RemoveCartItemSerializer,
-    UserSerializer,
-)
+from .serializers import (AdjustCartItemSerializer, CartItemSerializer,
+                          CartSerializer, OrderSerializer, ProductSerializer,
+                          RemoveCartItemSerializer, UserSerializer)
 
 
 @extend_schema(tags=["Products"])

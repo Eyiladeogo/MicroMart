@@ -1,12 +1,12 @@
-from rest_framework.test import APITestCase, APIClient
-from rest_framework import status
-from django.urls import reverse
-from django.contrib.auth import (
-    get_user_model,
-)
-from store.models import Product, Cart, CartItem, Order, OrderItem
 from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
+
+from store.models import Cart, CartItem, Order, OrderItem, Product
 
 User = get_user_model()
 
