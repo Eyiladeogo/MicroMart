@@ -168,16 +168,16 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: _minPriceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Min Price'),
-              ),
-              TextField(
-                controller: _maxPriceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Max Price'),
-              ),
+              // TextField(
+              //   controller: _minPriceController,
+              //   keyboardType: TextInputType.number,
+              //   decoration: const InputDecoration(labelText: 'Min Price'),
+              // ),
+              // TextField(
+              //   controller: _maxPriceController,
+              //   keyboardType: TextInputType.number,
+              //   decoration: const InputDecoration(labelText: 'Max Price'),
+              // ),
               DropdownButtonFormField<String>(
                 value: _currentOrdering.isEmpty ? null : _currentOrdering,
                 hint: const Text('Sort By'),

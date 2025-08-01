@@ -172,33 +172,33 @@ class CartScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              onPressed: () async {
-                                final success = await cartProvider
-                                    .removeFromCart(item.id);
-                                if (success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '${item.productName} removed from cart.',
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Failed to remove ${item.productName}.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                            // IconButton(
+                            //   icon: const Icon(
+                            //     Icons.delete_outline,
+                            //     color: Colors.red,
+                            //   ),
+                            //   onPressed: () async {
+                            //     final success = await cartProvider
+                            //         .removeFromCart(item.id);
+                            //     if (success) {
+                            //       ScaffoldMessenger.of(context).showSnackBar(
+                            //         SnackBar(
+                            //           content: Text(
+                            //             '${item.productName} removed from cart.',
+                            //           ),
+                            //         ),
+                            //       );
+                            //     } else {
+                            //       ScaffoldMessenger.of(context).showSnackBar(
+                            //         SnackBar(
+                            //           content: Text(
+                            //             'Failed to remove ${item.productName}.',
+                            //           ),
+                            //         ),
+                            //       );
+                            //     }
+                            //   },
+                            // ),
                           ],
                         ),
                       ),
